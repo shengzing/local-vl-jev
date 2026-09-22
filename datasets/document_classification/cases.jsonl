@@ -1,0 +1,5 @@
+{"image": "datasets/document_classification/sample_invoice.jpg", "question": "What type of document is this?", "expected": "invoice"}
+{"image": "datasets/document_classification/sample_contract.jpg", "question": "What type of document is this?", "expected": "contract"}
+{"image": "datasets/document_classification/sample_report.jpg", "question": "What type of document is this?", "expected": "report"}
+{"image": "datasets/document_classification/sample_letter.jpg", "question": "What type of document is this?", "expected": "letter"}
+{"image": "datasets/document_classification/sample_receipt.jpg", "question": "What type of document is this?", "expected": "invoice"}

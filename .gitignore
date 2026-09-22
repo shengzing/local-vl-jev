@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+dist/
+build/
+benchmark/results_*
+*.log
+.DS_Store

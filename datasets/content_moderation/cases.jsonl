@@ -1,0 +1,4 @@
+{"image": "datasets/content_moderation/sample_normal_1.jpg", "question": "Is this content appropriate?", "expected": "normal"}
+{"image": "datasets/content_moderation/sample_violation_1.jpg", "question": "Is this content appropriate?", "expected": "violation"}
+{"image": "datasets/content_moderation/sample_normal_2.jpg", "question": "Is this content appropriate?", "expected": "normal"}
+{"image": "datasets/content_moderation/sample_review_1.jpg", "question": "Is this content appropriate?", "expected": "review"}

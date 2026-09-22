@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "local-vl-jev"
+version = "1.0.0"
+description = "用视觉语言模型本地复现 Jev 式视觉判别 — 图片+prompt → logits → softmax"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "贾承斌", email = "jiacb@wiseweb.com.cn"},
+]
+requires-python = ">=3.9"
+dependencies = [
+    "mlx-vlm>=0.7.0",
+    "Pillow>=10.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

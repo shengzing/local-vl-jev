@@ -1,0 +1,5 @@
+{"image": "datasets/scene_recognition/indoor_1.jpg", "question": "What type of scene is this?", "expected": "indoor"}
+{"image": "datasets/scene_recognition/outdoor_1.jpg", "question": "What type of scene is this?", "expected": "outdoor"}
+{"image": "datasets/scene_recognition/night_1.jpg", "question": "What type of scene is this?", "expected": "night"}
+{"image": "datasets/scene_recognition/indoor_2.jpg", "question": "What type of scene is this?", "expected": "indoor"}
+{"image": "datasets/scene_recognition/outdoor_2.jpg", "question": "What type of scene is this?", "expected": "outdoor"}
