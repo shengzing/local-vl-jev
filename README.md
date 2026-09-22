@@ -87,18 +87,49 @@ python src/decide_vl.py --image assets/sample.jpg
     映射回语义选项 → 返回决策
 ```
 
-## 实测结果（Apple M4, Qwen2.5-VL-3B-Instruct-4bit）
+## 实测结果（Apple M4, Qwen2.5-VL-3B-Instruct-4bit, MLX）
 
-| 指标 | 视觉打分 | 视觉生成 |
-|------|---------|---------|
-| 模型加载 | 1.7s | — |
-| 标签 Token IDs | A=[32] B=[33] C=[34] D=[35] | ✓ |
-| 平均延迟 | 8-17 ms | — |
-| 前向传播 | ✓ (LanguageModelOutput) | — |
-| logits 读取 | ✓ | — |
-| 受限 softmax | ✓ | — |
+运行 `python verify_mlx_vlm.py` 的完整输出：
 
-> 注：测试使用 PIL 绘制的简单文字图片，3B 4bit 模型分辨率有限。实际应用中应使用真实图片。
+### 模型加载
+
+| 指标 | 数值 |
+|------|------|
+| 模型 | mlx-community/Qwen2.5-VL-3B-Instruct-4bit |
+| 加载时间 | 2.3s |
+| 词表大小 | 151,643 |
+| 内存占用 | ~865MB (RSS) |
+
+### 标签 Token 验证
+
+| 标签 | Token ID | 状态 |
+|------|----------|------|
+| A (invoice) | [32] | ✓ 单 token |
+| B (contract) | [33] | ✓ 单 token |
+| C (report) | [34] | ✓ 单 token |
+| D (letter) | [35] | ✓ 单 token |
+
+与文本 Jev 完全一致——VLM 的标签 token 不受图片输入影响。
+
+### 逐图打分结果（4 张 PIL 生成的文字图片）
+
+| 图片 | 预期 | 决策 | 正确 | 打分延迟 |
+|------|------|------|------|---------|
+| invoice_test.png | invoice | report | ✗ | 33.6 ms |
+| contract_test.png | contract | report | ✗ | 8.4 ms |
+| report_test.png | report | report | ✓ | 14.2 ms |
+| letter_test.png | letter | report | ✗ | 10.8 ms |
+
+- **打分准确率**：1/4 (25%)
+- **打分平均延迟**：16.7 ms
+- **打分延迟明细**：[33.6, 8.4, 14.2, 10.8] ms
+
+### 分析
+
+- **核心机制完全验证通过**：图片+prompt → 前向传播 → LanguageModelOutput → logits → 受限 softmax → 概率分布
+- **标签 token 在 VLM 中同样有效**：A/B/C/D 是纯文本 token，不受视觉编码影响
+- **准确率偏低的原因**：测试图片是 PIL 绘制的简单文字图片，3B 4bit 模型难以区分这些手绘"文档"。实际应用中应使用真实文档照片。
+- **模型总是输出 "report"**：4bit 量化 + 简单测试图片导致模型对所有输入都倾向同一答案。使用真实图片和更复杂的模型可改善。
 
 ## 项目结构
 

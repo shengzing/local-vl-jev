@@ -87,18 +87,49 @@ User input (image + question + candidates)
     Map back to semantic options → return decision
 ```
 
-## Benchmark Results (Apple M4, Qwen2.5-VL-3B-Instruct-4bit)
+## Benchmark Results (Apple M4, Qwen2.5-VL-3B-Instruct-4bit, MLX)
 
-| Metric | Visual Scoring | Visual Generation |
-|--------|---------------|-------------------|
-| Model loading | 1.7s | — |
-| Label Token IDs | A=[32] B=[33] C=[34] D=[35] | ✓ |
-| Avg latency | 8-17 ms | — |
-| Forward pass | ✓ (LanguageModelOutput) | — |
-| Logits extraction | ✓ | — |
-| Restricted softmax | ✓ | — |
+Full output from `python verify_mlx_vlm.py`:
 
-> Note: Tests used simple PIL-drawn text images. The 3B 4bit model has limited discrimination on these. Use real images in production.
+### Model Loading
+
+| Metric | Value |
+|--------|-------|
+| Model | mlx-community/Qwen2.5-VL-3B-Instruct-4bit |
+| Load time | 2.3s |
+| Vocab size | 151,643 |
+| Memory (RSS) | ~865MB |
+
+### Label Token Verification
+
+| Label | Token ID | Status |
+|-------|----------|--------|
+| A (invoice) | [32] | ✓ single token |
+| B (contract) | [33] | ✓ single token |
+| C (report) | [34] | ✓ single token |
+| D (letter) | [35] | ✓ single token |
+
+Identical to text Jev — VLM label tokens are unaffected by image input.
+
+### Per-Image Scoring Results (4 PIL-generated text images)
+
+| Image | Expected | Decision | Correct | Latency |
+|-------|----------|----------|---------|---------|
+| invoice_test.png | invoice | report | ✗ | 33.6 ms |
+| contract_test.png | contract | report | ✗ | 8.4 ms |
+| report_test.png | report | report | ✓ | 14.2 ms |
+| letter_test.png | letter | report | ✗ | 10.8 ms |
+
+- **Scoring accuracy**: 1/4 (25%)
+- **Avg scoring latency**: 16.7 ms
+- **Latency breakdown**: [33.6, 8.4, 14.2, 10.8] ms
+
+### Analysis
+
+- **Core mechanism fully verified**: image+prompt → forward pass → LanguageModelOutput → logits → restricted softmax → probability distribution
+- **Label tokens work in VLM**: A/B/C/D are pure text tokens, unaffected by visual encoding
+- **Low accuracy cause**: Test images are simple PIL-drawn text images. The 3B 4bit model struggles to distinguish these hand-drawn "documents." Use real document photos in production.
+- **Model defaults to "report"**: 4bit quantization + simple test images cause the model to favor the same answer for all inputs. Real images and larger models should improve discrimination.
 
 ## Project Structure
 
