@@ -118,12 +118,29 @@ def main():
     print(f"数据集: {args.dataset} ({len(dataset)} cases)")
     print(f"模型: {args.model}\n")
 
-    choices = {
-        "A": "invoice",
-        "B": "contract",
-        "C": "report",
-        "D": "letter",
+    # 每个数据集对应的候选选项
+    DATASET_CHOICES = {
+        "document_classification": {
+            "A": "invoice",
+            "B": "contract",
+            "C": "report",
+            "D": "letter",
+        },
+        "scene_recognition": {
+            "A": "indoor",
+            "B": "outdoor",
+            "C": "night",
+        },
+        "content_moderation": {
+            "A": "normal",
+            "B": "violation",
+            "C": "review",
+        },
     }
+    choices = DATASET_CHOICES.get(args.dataset)
+    if choices is None:
+        print(f"未知数据集 {args.dataset!r}，请在 DATASET_CHOICES 中登记候选选项")
+        sys.exit(1)
 
     engine = LocalVLJevEngine(model_path=args.model)
     result = run_benchmark(dataset, engine, choices)

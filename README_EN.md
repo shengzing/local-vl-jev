@@ -2,13 +2,13 @@
 
 > An open-source project extending Jev-style fixed-answer scoring to the visual domain: input an image + question, skip text generation entirely, read the first token's logits, and apply softmax over known candidates to return a probability distribution.
 
-**Author: Jiacheng Bin (jiacb@wiseweb.com.cn)**
+**Author: Chengbin Jia (shengzing@163.com)**
 
 English | [中文](./README.md)
 
 ## What Is This
 
-[local-jev](../local-jev) demonstrated that fixed-answer scoring with text LLMs is 3-30x faster than text generation. This project extends the same approach to **vision-language models (VLMs)**—
+[local-jev](https://github.com/shengzing/local-jev) demonstrated that fixed-answer scoring with text LLMs is 3-30x faster than text generation. This project extends the same approach to **vision-language models (VLMs)**—
 
 When an application needs to classify, discriminate, or filter based on images, it doesn't need the VLM to "describe the image and then write an answer." Instead, it directly reads the first token's logits and applies softmax over the candidate options.
 
@@ -40,14 +40,30 @@ Output:
 {
   "decision": "invoice",
   "probabilities": {
-    "invoice": 0.8923,
-    "contract": 0.0712,
-    "report": 0.0289,
-    "letter": 0.0076
+    "invoice": 0.9978,
+    "contract": 0.0016,
+    "report": 0.0002,
+    "letter": 0.0004
   },
   "threshold_passed": true,
-  "latency_ms": 11.0
+  "latency_ms": 2775.2
 }
+```
+
+### Run the benchmark
+
+```bash
+python benchmark/run_benchmark_vl.py --dataset scene_recognition
+python benchmark/run_benchmark_vl.py --dataset document_classification
+python benchmark/run_benchmark_vl.py --dataset content_moderation
+```
+
+### Regenerate test images
+
+The images under `datasets/` and `assets/` are script-synthesized and reproducible:
+
+```bash
+python scripts/generate_dataset_images.py
 ```
 
 ## Core Principle
@@ -61,13 +77,13 @@ Output:
 | Inference path | tokenize → forward → read logits | image encode + tokenize → forward → read logits |
 | Scoring logic | Read A/B/C logits → softmax | Identical |
 | Generation path | Autoregressive loop | Identical (slower, VLM is larger) |
-| Speed advantage | 3x | Expected 5-50x (VLM generation is slower) |
+| Speed advantage | 3x | 1.0-2.6x (measured; both paths share vision-encoding cost — see Benchmark Results) |
 
-### Why Visual Scenarios Are Better Suited for Scoring
+### Why Visual Scenarios Suit Scoring
 
-1. **VLM generation is slower**: Vision models have more parameters, image tokens take up more positions, each autoregressive step is slower
-2. **Visual discrimination doesn't need description**: Checking if a screenshot violates policy doesn't require "There is a person wearing red standing in..."
-3. **Probability distribution is more valuable**: The difference between 0.91 and 0.46 confidence directly determines auto-pass vs human review
+1. **The probability distribution is more valuable**: the difference between 0.91 and 0.46 confidence directly determines auto-pass vs human review
+2. **Deterministic, structured output**: scoring returns a `choice → probability` mapping for free; the generation path must parse free text, and our measured label-parse failure rate on explanatory answers was high
+3. **Real speedup on long outputs**: uncontrolled-length generation (detailed descriptions, multi-step reasoning) takes 2-3x longer than scoring
 
 ### Inference Flow
 
@@ -89,16 +105,14 @@ User input (image + question + candidates)
 
 ## Benchmark Results (Apple M4, Qwen2.5-VL-3B-Instruct-4bit, MLX)
 
-Full output from `python verify_mlx_vlm.py`:
-
 ### Model Loading
 
 | Metric | Value |
 |--------|-------|
 | Model | mlx-community/Qwen2.5-VL-3B-Instruct-4bit |
-| Load time | 2.3s |
+| Load time | ~1s (model cached locally) |
 | Vocab size | 151,643 |
-| Memory (RSS) | ~865MB |
+| Memory (RSS) | ~3.3GB |
 
 ### Label Token Verification
 
@@ -111,25 +125,56 @@ Full output from `python verify_mlx_vlm.py`:
 
 Identical to text Jev — VLM label tokens are unaffected by image input.
 
-### Per-Image Scoring Results (4 PIL-generated text images)
+### Dataset Scoring Results (`python benchmark/run_benchmark_vl.py`)
 
-| Image | Expected | Decision | Correct | Latency |
-|-------|----------|----------|---------|---------|
-| invoice_test.png | invoice | report | ✗ | 33.6 ms |
-| contract_test.png | contract | report | ✗ | 8.4 ms |
-| report_test.png | report | report | ✓ | 14.2 ms |
-| letter_test.png | letter | report | ✗ | 10.8 ms |
+The repository ships three datasets (14 PIL-synthesized test images under `datasets/`):
 
-- **Scoring accuracy**: 1/4 (25%)
-- **Avg scoring latency**: 16.7 ms
-- **Latency breakdown**: [33.6, 8.4, 14.2, 10.8] ms
+| Dataset | Cases | Scoring acc | Generation acc | Scoring latency | Generation latency |
+|---------|-------|-------------|----------------|-----------------|--------------------|
+| scene_recognition | 5 | 5/5 (100%) | 5/5 (100%) | 1557 ms | 1464 ms |
+| document_classification | 5 | 5/5 (100%) | 5/5 (100%) | 2473 ms | 2438 ms |
+| content_moderation | 4 | 3/4 (75%) | 3/4 (75%) | 1480 ms | 1483 ms |
 
-### Analysis
+Per-image scoring detail (document_classification, all top probabilities 0.99+):
 
-- **Core mechanism fully verified**: image+prompt → forward pass → LanguageModelOutput → logits → restricted softmax → probability distribution
-- **Label tokens work in VLM**: A/B/C/D are pure text tokens, unaffected by visual encoding
-- **Low accuracy cause**: Test images are simple PIL-drawn text images. The 3B 4bit model struggles to distinguish these hand-drawn "documents." Use real document photos in production.
-- **Model defaults to "report"**: 4bit quantization + simple test images cause the model to favor the same answer for all inputs. Real images and larger models should improve discrimination.
+| Image | Expected | Decision | Correct | Top prob |
+|-------|----------|----------|---------|----------|
+| sample_invoice.jpg | invoice | invoice | ✓ | 0.999 |
+| sample_contract.jpg | contract | contract | ✓ | 0.999 |
+| sample_report.jpg | report | report | ✓ | 0.998 |
+| sample_letter.jpg | letter | letter | ✓ | 0.996 |
+| sample_receipt.jpg | invoice | invoice | ✓ | 0.997 |
+
+### Scoring vs Generation: latency anatomy
+
+The dominant cost of visual discrimination is **vision encoding + one 723-token forward pass** (~2.7s for a 640×800 image). The generation path pays the same cost; the only difference is the number of autoregressively generated tokens:
+
+| Output form | Avg latency | vs scoring (2726 ms) |
+|------------|-------------|----------------------|
+| Jev-style scoring (0 generated tokens) | 2726 ms | 1.0x |
+| Short answer generation (1-5 tokens) | 2642 ms | ≈1.0x |
+| Explanatory generation (~25 tokens) | 3029 ms | 1.11x |
+| Long description (150-250 tokens) | 7207 ms | 2.64x |
+
+> **Honest conclusion**: when the model only needs to emit one or two tokens, scoring has no speed advantage (both paths share the same vision encoding and prefill cost). Scoring's advantages are: ① uncontrolled long-output scenarios (2-3x); ② a structured probability distribution for free (the generation path needs fragile text parsing — our measured label-parse failure rate on explanatory answers was high); ③ deterministic output.
+
+### verify_mlx_vlm.py output (4 PIL text images)
+
+```
+  Image                     Expected     Decision      OK  Score(ms)    Gen(ms)
+  invoice_test.png          invoice      invoice        ✓      742.3      793.9
+  contract_test.png         contract     contract       ✓      733.8      785.4
+  report_test.png           report       report         ✓      737.1      777.1
+  letter_test.png           letter       letter         ✓      735.6      745.3
+
+  Metric                    Scoring      Generation
+  Accuracy                  4/4          4/4
+  Avg latency (ms)          737.2        775.4
+```
+
+### Important fix record
+
+The initial code **omitted `num_images=1`** when rendering with `apply_chat_template`, so the rendered prompt contained no `<|image_pad|>` placeholder and the image never actually reached the model — the initial README's "16.7 ms scoring latency, model always answers report" was a symptom of this bug (text-only forward + language prior). After the fix, images genuinely participate in inference: latency rises to a real ~1.5-2.7s (resolution-dependent) and accuracy recovers from 25% to 100%. See `docs/architecture.md`.
 
 ## Project Structure
 
@@ -149,12 +194,14 @@ local-vl-jev/
 ├── benchmark/
 │   └── run_benchmark_vl.py      ← Visual scoring vs generation comparison
 ├── datasets/
-│   ├── document_classification/ ← Document classification dataset
-│   ├── content_moderation/      ← Content moderation dataset
-│   └── scene_recognition/       ← Scene recognition dataset
+│   ├── document_classification/ ← Document classification dataset (with synthetic test images)
+│   ├── content_moderation/      ← Content moderation dataset (with synthetic test images)
+│   └── scene_recognition/       ← Scene recognition dataset (with synthetic test images)
 ├── verify_mlx_vlm.py            ← MLX-VLM verification script
+├── scripts/
+│   └── generate_dataset_images.py ← Regenerate all test images
 ├── assets/
-│   └── .gitkeep                 ← Place sample images here
+│   └── sample.jpg                ← Quick Start sample image
 ├── article/
 │   └── .gitkeep                 ← Technical article
 └── docs/
@@ -186,11 +233,11 @@ local-vl-jev/
 
 ## Acknowledgments
 
-- [local-jev](../local-jev) text-only project
+- [local-jev](https://github.com/shengzing/local-jev) text-only project
 - [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) MLX vision-language model library
 - [Qwen2.5-VL](https://github.com/QwenLM/Qwen2.5-VL) Alibaba Qwen vision-language model
 - [mlx-community](https://huggingface.co/mlx-community) MLX format model conversions
 
 ## License
 
-MIT — Copyright (c) 2026 Jiacheng Bin (贾承斌)
+MIT — Copyright (c) 2026 Chengbin Jia (贾承斌) (shengzing@163.com)

@@ -99,7 +99,9 @@ def score_vl(
     ]
 
     # 用 chat template 渲染
-    rendered = apply_chat_template(processor, config, messages, tokenize=False)
+    # num_images=1 至关重要：缺少它时渲染结果不含 <|image_pad|> 占位符，
+    # 图片不会被送进模型（mlx-vlm 0.7.x 行为）
+    rendered = apply_chat_template(processor, config, messages, tokenize=False, num_images=1)
 
     # 处理输入 — mlx-vlm 0.7.x: 用 processor(text=..., images=[PIL.Image])
     pil_img = PILImage.open(image_path)
@@ -119,6 +121,8 @@ def score_vl(
     )
     # LanguageModelOutput — 需要取 .logits 属性
     logits = output.logits if hasattr(output, 'logits') else output
+    # MLX 是惰性求值：显式 eval 才能把真实计算时间计入延迟
+    mx.eval(logits)
     latency_ms = (time.perf_counter() - t0) * 1000
 
     # 取最后一个位置的 logits

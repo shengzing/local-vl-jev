@@ -95,7 +95,11 @@ Label: """
                 ],
             }
         ]
-        rendered = apply_chat_template(self.processor, self.config, messages, tokenize=False)
+        # num_images=1 至关重要：缺少它时渲染结果不含 <|image_pad|> 占位符，
+        # 图片不会被送进模型（mlx-vlm 0.7.x 行为）
+        rendered = apply_chat_template(
+            self.processor, self.config, messages, tokenize=False, num_images=1
+        )
         pil_img = PILImage.open(image_path)
         inputs = self.processor(text=rendered, images=[pil_img], return_tensors='mlx')
 
@@ -107,6 +111,8 @@ Label: """
             image_grid_thw=inputs.get("image_grid_thw"),
         )
         logits = output.logits if hasattr(output, 'logits') else output
+        # MLX 是惰性求值：显式 eval 才能把真实计算时间计入延迟
+        mx.eval(logits)
         latency_ms = (time.perf_counter() - t0) * 1000
 
         last_logits = logits[0, -1, :]
@@ -151,37 +157,33 @@ Label: """
                 ],
             }
         ]
-        rendered = apply_chat_template(self.processor, self.config, messages, tokenize=False)
+        # 同 decide()：num_images=1 保证图片真正进入模型
+        rendered = apply_chat_template(
+            self.processor, self.config, messages, tokenize=False, num_images=1
+        )
 
-        pil_img = PILImage.open(image_path)
         t0 = time.perf_counter()
-        try:
-            output = generate(
-                self.model, self.processor,
-                prompt=rendered,
-                image=[pil_img],
-                max_tokens=max_tokens,
-                verbose=False,
-            )
-        except Exception:
-            output = generate(
-                self.model, self.processor,
-                prompt=rendered,
-                image=[image_path],
-                max_tokens=max_tokens,
-                verbose=False,
-            )
+        output = generate(
+            self.model, self.processor,
+            prompt=rendered,
+            image=[image_path],
+            max_tokens=max_tokens,
+            verbose=False,
+        )
         latency_ms = (time.perf_counter() - t0) * 1000
 
+        # mlx-vlm 0.7.x 返回 GenerationResult 对象而非 str
+        response = output.text if hasattr(output, "text") else str(output)
+
         parsed = None
-        search_text = output[:200].lower()
+        search_text = response[:200].lower()
         for label, meaning in choices:
             if label.lower() in search_text or meaning.lower() in search_text:
                 parsed = meaning
                 break
 
         return VLGenerationResult(
-            response=output,
+            response=response,
             parsed_choice=parsed,
             latency_ms=latency_ms,
         )
