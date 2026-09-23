@@ -1,0 +1,139 @@
+{
+  "datasets": {
+    "scene_recognition": {
+      "name": "场景识别",
+      "n_cases": 5,
+      "choices": [
+        "indoor",
+        "outdoor",
+        "night"
+      ],
+      "scoring": {
+        "accuracy": 1.0,
+        "correct": 5,
+        "total": 5,
+        "avg_latency_ms": 1832.251091557555,
+        "p50_latency_ms": 1823.8451249198988,
+        "p95_latency_ms": 1857.3837169911712,
+        "min_latency_ms": 1813.5941659566015,
+        "max_latency_ms": 1861.8655420141295,
+        "qps": 0.5457767249301638,
+        "avg_top_prob": 0.9821098155429785
+      },
+      "generation": {
+        "accuracy": 1.0,
+        "correct": 5,
+        "total": 5,
+        "avg_latency_ms": 1889.0989331994206,
+        "p50_latency_ms": 1890.973582980223,
+        "p95_latency_ms": 1908.782875025645,
+        "min_latency_ms": 1861.4169579232112,
+        "max_latency_ms": 1910.125375026837,
+        "qps": 0.5293529007008528,
+        "parse_failures": 0,
+        "parse_fail_rate": 0.0
+      },
+      "speed_ratio": 1.031026228830646
+    },
+    "document_classification": {
+      "name": "文档分类",
+      "n_cases": 5,
+      "choices": [
+        "invoice",
+        "contract",
+        "report",
+        "letter"
+      ],
+      "scoring": {
+        "accuracy": 1.0,
+        "correct": 5,
+        "total": 5,
+        "avg_latency_ms": 3201.00765877869,
+        "p50_latency_ms": 3483.414083952084,
+        "p95_latency_ms": 3526.929016970098,
+        "min_latency_ms": 2035.2639169432223,
+        "max_latency_ms": 3532.5304169673473,
+        "qps": 0.31240162679946204,
+        "avg_top_prob": 0.9976602548096257
+      },
+      "generation": {
+        "accuracy": 1.0,
+        "correct": 5,
+        "total": 5,
+        "avg_latency_ms": 3161.1563331680372,
+        "p50_latency_ms": 3410.1964998990297,
+        "p95_latency_ms": 3597.481275186874,
+        "min_latency_ms": 1961.4982909988612,
+        "max_latency_ms": 3635.7406669994816,
+        "qps": 0.3163399384926412,
+        "parse_failures": 0,
+        "parse_fail_rate": 0.0
+      },
+      "speed_ratio": 0.9875503810491171
+    },
+    "content_moderation": {
+      "name": "内容审核",
+      "n_cases": 4,
+      "choices": [
+        "normal",
+        "violation",
+        "review"
+      ],
+      "scoring": {
+        "accuracy": 0.75,
+        "correct": 3,
+        "total": 4,
+        "avg_latency_ms": 1901.0893124795984,
+        "p50_latency_ms": 1898.7988124717958,
+        "p95_latency_ms": 1952.8434374020435,
+        "min_latency_ms": 1848.9398750243708,
+        "max_latency_ms": 1957.8197499504313,
+        "qps": 0.5260142137644738,
+        "avg_top_prob": 0.7900492759870564
+      },
+      "generation": {
+        "accuracy": 0.75,
+        "correct": 3,
+        "total": 4,
+        "avg_latency_ms": 1886.3551249960437,
+        "p50_latency_ms": 1890.2192499954253,
+        "p95_latency_ms": 1912.0832170068752,
+        "min_latency_ms": 1849.5919579872862,
+        "max_latency_ms": 1915.3900420060381,
+        "qps": 0.5301228738687777,
+        "parse_failures": 0,
+        "parse_fail_rate": 0.0
+      },
+      "speed_ratio": 0.9922496079553796
+    }
+  },
+  "summary": {
+    "total_cases": 14,
+    "scoring": {
+      "accuracy": 0.9285714285714286,
+      "correct": 13,
+      "total": 14,
+      "avg_latency_ms": 2340.760785828544,
+      "p50_latency_ms": 1898.7988124717958,
+      "p95_latency_ms": 3514.325866976287,
+      "min_latency_ms": 1813.5941659566015,
+      "max_latency_ms": 3532.5304169673473,
+      "qps": 0.42721153141927587,
+      "avg_top_prob": 0.9327891039793748
+    },
+    "generation": {
+      "accuracy": 0.9285714285714286,
+      "correct": 13,
+      "total": 14,
+      "avg_latency_ms": 2342.621202272962,
+      "p50_latency_ms": 1906.7691250238568,
+      "p95_latency_ms": 3511.3976436085068,
+      "min_latency_ms": 1849.5919579872862,
+      "max_latency_ms": 3635.7406669994816,
+      "qps": 0.42687225703828496,
+      "parse_failures": 0,
+      "parse_fail_rate": 0.0
+    },
+    "speed_ratio": 1.0007947913582973
+  }
+}

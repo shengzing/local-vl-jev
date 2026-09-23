@@ -145,7 +145,7 @@ Label: """
         """常规视觉生成路径：让 VLM 生成文本，后解析选项。"""
         from PIL import Image as PILImage
 
-        choice_lines = "\n".join(f"{k} = {v}" for k, v in choices)
+        choice_lines = "\n".join(f"{k} = {v}" for k, v in choices.items())
         prompt = f"Question: {question}\n\nLabels:\n{choice_lines}\n\nReply with only the label letter."
 
         messages = [
@@ -177,7 +177,7 @@ Label: """
 
         parsed = None
         search_text = response[:200].lower()
-        for label, meaning in choices:
+        for label, meaning in choices.items():
             if label.lower() in search_text or meaning.lower() in search_text:
                 parsed = meaning
                 break
